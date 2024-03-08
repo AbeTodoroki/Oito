@@ -1,17 +1,13 @@
 function sortColumns() {
   var sheetNames = ['Plano', 'Juiz', 'Juizo'];
-  var startRow = 3; // Sort from Row 3 and below
+  var startRow = 3;
 
-  // Iterate through each sheet name
   for (var i = 0; i < sheetNames.length; i++) {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetNames[i]);
 
-    // Check if the sheet exists and is not 'Entrada de dados'
     if (sheet && sheet.getName() !== 'Entrada de dados') {
-      // Get the data range from Row 3 to the last row in the sheet for Columns A to K
       var dataRange = sheet.getRange(startRow, 1, sheet.getLastRow() - startRow + 1, 11);
 
-      // Sort the data based on multiple columns (A to K)
       dataRange.sort([
         { column: 1, ascending: true },
         { column: 2, ascending: true },
@@ -26,7 +22,6 @@ function sortColumns() {
         { column: 11, ascending: true }
       ]);
     } else {
-      // Log a message or take alternative action if the sheet does not exist or is 'Entrada de dados'
       console.log("Cannot sort this sheet.");
     }
   }
