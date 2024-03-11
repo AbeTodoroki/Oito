@@ -1,7 +1,7 @@
 let extractedText = '';
 
 function extractTextAndClickNext() {
-    let iframe = document.getElementsByName('userMainFrame')[0];
+    let iframe = document.querySelector("#userMainFrame");
 
     if (iframe) {
         let iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
@@ -25,11 +25,15 @@ function extractTextAndClickNext() {
             let alternativeArrowNext = iframeDocument.querySelector('a[alt="próxima"][title="próxima página"]');
             
             if (arrowNext) {
+                arrowNext.addEventListener('click', function() {
+                    iframe.addEventListener('load', extractTextAndClickNext);
+                });
                 arrowNext.click();
-                setTimeout(extractTextAndClickNext, 1000);
             } else if (alternativeArrowNext) {
+                alternativeArrowNext.addEventListener('click', function() {
+                    iframe.addEventListener('load', extractTextAndClickNext);
+                });
                 alternativeArrowNext.click();
-                setTimeout(extractTextAndClickNext, 1000);
             } else {
                 displayPopup();
             }
