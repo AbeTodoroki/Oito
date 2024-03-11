@@ -1,4 +1,3 @@
-let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
 let extractedText = '';
 
 function extractTextAndClickNext() {
@@ -8,36 +7,37 @@ function extractTextAndClickNext() {
         let iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
 
         if (iframeDocument && iframeDocument.body) {
-            let elements = iframeDocument.querySelectorAll('td[id^="tdProc"] > a > em');
+            let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
             let matches = [];
-
-            elements.forEach(element => {
-                let text = element.textContent;
-                let match = text.match(regex);
-                if (match) {
-                    matches.push(match[0]);
-                }
-            });
+            let text = iframeDocument.body.innerText;
+            
+            let match;
+            while (match = regex.exec(text)) {
+                matches.push(match[0]);
+            }
 
             if (matches.length > 0) {
                 let values = matches.join('\n');
                 extractedText += values + '\n';
+            }
 
-                let arrowNext = iframeDocument.querySelector('#navigator > div.navRight > a.arrowNextOn')
-                if (arrowNext) {
-                    arrowNext.click();
-                    setTimeout(extractTextAndClickNext, 400);
-                } else {
-                    displayPopup();
-                }
+            let arrowNext = iframeDocument.querySelector('#navigator > div.navRight > a.arrowNextOn');
+            let alternativeArrowNext = iframeDocument.querySelector('a[alt="próxima"][title="próxima página"]');
+            
+            if (arrowNext) {
+                arrowNext.click();
+                setTimeout(extractTextAndClickNext, 1000);
+            } else if (alternativeArrowNext) {
+                alternativeArrowNext.click();
+                setTimeout(extractTextAndClickNext, 1000);
             } else {
-                alert("No values found on this page!");
+                displayPopup();
             }
         } else {
-            alert("Iframe document body not found!");
+            alert("No values found on this page!");
         }
     } else {
-        alert("Iframe 'userMainFrame' not found!");
+        alert("Iframe document body not found!");
     }
 }
 
