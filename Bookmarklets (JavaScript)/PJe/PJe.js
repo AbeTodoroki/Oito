@@ -1,6 +1,6 @@
 javascript: (function() {
-    var matches = [];
-	var comarcas = document.querySelectorAll('span.nomeTarefa');
+    var regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+    var extractedText = [];
 
     var firstPageLink = document.querySelector('.rich-datascr-button[onclick*="\'page\': \'first\'"]');
     if (firstPageLink) {
@@ -8,17 +8,22 @@ javascript: (function() {
     }
 
     function extractTextFromPage() {
-        var regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
-        var text = document.body.innerText;
-		var extractedText = [];
-        let match;
-        while (match = regex.exec(text)) {
-            matches.push(match[0]);
+        var textNodes = document.querySelectorAll('.numero-processo-acervo .text-bold');
+
+        if (textNodes.length === 0) {
+            textNodes = document.querySelectorAll('.numero-processo-acervo[title="Autos Digitais"]');
         }
 
-        if (matches.length > 0) {
-            let values = matches.join('\n');
-            extractedText += values + '\n';
+        if (textNodes.length > 0) {
+            textNodes.forEach(function(element) {
+                var textContent = element.textContent.trim();
+                var found = textContent.match(regex);
+                if (found) {
+                    extractedText.push(found);
+                }
+            });
+        } else {
+            console.log('Nenhum resultado encontrado na página.');
         }
     }
 
@@ -26,42 +31,42 @@ javascript: (function() {
         var pageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + pageNumber + '\'"]');
         if (pageLink) {
             pageLink.click();
-            waitForPageLoad().then(function() {
+            var statusIndicator = document.getElementById('_viewRoot:status.start');
+            var interval = setInterval(function() {
+                if (statusIndicator.style.display === 'none') {
+                    clearInterval(interval);
+                    setTimeout(function() {
+                        extractTextFromPage();
+                        var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
+                        if (nextPageLink) {
+                            triggerEvent(pageNumber + 1);
+                        } else {
+                            showMatches();
+                        }
+                    }, 0);
+                }
+            }, 200);
+        }
+    }
+
+    var statusIndicator = document.getElementById('_viewRoot:status.start');
+    var interval = setInterval(function() {
+        if (statusIndicator.style.display === 'none') {
+            clearInterval(interval);
+            setTimeout(function() {
                 extractTextFromPage();
-                var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
+                var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'2\'"]');
                 if (nextPageLink) {
-                    triggerEvent(pageNumber + 1);
+                    triggerEvent(2);
                 } else {
                     showMatches();
                 }
-            });
+            }, 0);
         }
-    }
-
-    function waitForPageLoad() {
-        return new Promise(function(resolve) {
-            var statusIndicator = document.getElementById('_viewRoot:status.start');
-            var checkDisplayInterval = setInterval(function() {
-                if (statusIndicator.style.display === 'none') {
-                    clearInterval(checkDisplayInterval);
-                    resolve();
-                }
-            }, 200);
-        });
-    }
-
-    waitForPageLoad().then(function() {
-        extractTextFromPage();
-        var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'2\'"]');
-        if (nextPageLink) {
-            triggerEvent(2);
-        } else {
-            showMatches();
-        }
-    });
+    }, 200);
 
     function showMatches() {
-        var allMatches = matches.flat().join('\n');
+        var allMatches = extractedText.flat().join('\n');
         var numberOfLines = allMatches.split('\n').length;
         navigator.clipboard.writeText(allMatches).then(function() {
             alert(numberOfLines + ' Processos Copiados.');
