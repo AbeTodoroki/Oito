@@ -1,38 +1,24 @@
-function ComarcaIndex() {
-    return new Promise((resolve, reject) => {
-        var elements = document.querySelectorAll('span.nomeTarefa');
+javascript:
 
-        elements.forEach(element => {
-            element.click();
-        });
+async function ComarcaIndex() {
+    var elements = document.querySelectorAll('span.nomeTarefa');
 
-        WaitForPageLoad().then(() => {
-            resolve();
-        });
-    });
+    for (let element of elements) {
+        element.click();
+        await WaitForPageLoad();
+    }
 }
 
-function CxEntradaIndex() {
-    return new Promise((resolve, reject) => {
-        var elements = document.querySelectorAll('span.nomeTarefa');
-        var caixaPromises = [];
+async function CxEntradaIndex() {
+    var elements = document.querySelectorAll('span.nomeTarefa');
 
-        elements.forEach(element => {
-            if (element.textContent.trim() === 'Caixa de entrada') {
-                element.click();
-                var promise = new Promise((resolve, reject) => {
-                    WaitForPageLoad().then(() => {
-                        ExtractText().then(() => resolve());
-                    });
-                });
-                caixaPromises.push(promise);
-            }
-        });
-
-        Promise.all(caixaPromises).then(() => {
-            resolve();
-        });
-    });
+    for (let element of elements) {
+        if (element.textContent.trim() === 'Caixa de entrada') {
+            element.click();
+            await WaitForPageLoad();
+            await ChangePage();
+        }
+    }
 }
 
 function WaitForPageLoad() {
@@ -47,23 +33,36 @@ function WaitForPageLoad() {
     });
 }
 
-function extractText() {
+function ExtractText() {
     var regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
     var text = document.body.innerText;
 
     if (text.length > 0) {
-        text.forEach(function (element) {
-            var textContent = element.textContent.trim();
-            var found = textContent.match(regex);
+        var lines = text.split('\n');
+        lines.forEach(function (line) {
+            var found = line.match(regex);
             if (found) {
-                extractedText.push(found);
+                ExtractedText = ExtractedText.concat(found);
             }
         });
     }
 }
 
+async function ChangePage(pageNumber) {
+    await ExtractText();
+    var pageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + pageNumber + '\'"]');
+    if (pageLink) {
+        pageLink.click();
+        await WaitForPageLoad();
+        var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
+        if (nextPageLink) {
+            await ChangePage(pageNumber + 1);
+        }
+    }
+}
+
 function showMatches() {
-    var allMatches = extractedText.flat().join('\n');
+    var allMatches = ExtractedText.flat().join('\n');
     var numberOfLines = allMatches.split('\n').length;
     var confirmation = confirm(numberOfLines + ' Processos encontrados.\nDeseja copiar para a área de transferência?');
 
@@ -75,7 +74,7 @@ function showMatches() {
     }
 }
 
-var extractedText = [];
+var ExtractedText = [];
 
 ComarcaIndex().then(() => {
     CxEntradaIndex().then(() => {
