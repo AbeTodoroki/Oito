@@ -16,7 +16,7 @@ async function CxEntradaIndex() {
         if (element.textContent.trim() === 'Caixa de entrada') {
             element.click();
             await WaitForPageLoad();
-            await ChangePage();
+            await navigatePages();
         }
     }
 }
@@ -48,16 +48,36 @@ function ExtractText() {
     }
 }
 
-async function ChangePage(pageNumber) {
-    await ExtractText();
-    var pageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + pageNumber + '\'"]');
-    if (pageLink) {
-        pageLink.click();
-        await WaitForPageLoad();
-        var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
-        if (nextPageLink) {
-            await ChangePage(pageNumber + 1);
+async function navigatePages() {
+    try {
+        var pageNumber = 1;
+        while (true) {
+            await ExtractText();
+            var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
+            if (!nextPageLink) {
+                break;
+            }
+            nextPageLink.click();
+            await WaitForPageLoad();
+            pageNumber++;
         }
+    } catch (error) {
+        console.error('Error in navigatePages function: ', error);
+    }
+}
+
+function ExtractText() {
+    var regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+    var text = document.body.innerText;
+
+    if (text.length > 0) {
+        var lines = text.split('\n');
+        lines.forEach(function (line) {
+            var found = line.match(regex);
+            if (found) {
+                ExtractedText = ExtractedText.concat(found);
+            }
+        });
     }
 }
 
