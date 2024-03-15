@@ -1,77 +1,97 @@
-javascript: (function() {
-    var regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
-    var extractedText = [];
+javascript:
 
-    var firstPageLink = document.querySelector('.rich-datascr-button[onclick*="\'page\': \'first\'"]');
-    if (firstPageLink) {
-        firstPageLink.click();
+async function ComarcaIndex() {
+    let elements = document.querySelectorAll('span.nomeTarefa');
+
+    for (let element of elements) {
+        element.click();
+        await WaitForPageLoad();
     }
+}
 
-    function extractTextFromPage() {
-        var textNodes = document.querySelectorAll('.numero-processo-acervo .text-bold');
+async function CxEntradaIndex() {
+    let elements = document.querySelectorAll('span.nomeTarefa');
 
-        if (textNodes.length === 0) {
-            textNodes = document.querySelectorAll('.numero-processo-acervo[title="Autos Digitais"]');
-        }
-
-        if (textNodes.length > 0) {
-            textNodes.forEach(function(element) {
-                var textContent = element.textContent.trim();
-                var found = textContent.match(regex);
-                if (found) {
-                    extractedText.push(found);
-                }
-            });
-        } else {
-            console.log('Nenhum resultado encontrado na página.');
+    for (let element of elements) {
+        if (element.textContent.trim() === 'Caixa de entrada') {
+            element.click();
+            await WaitForPageLoad();
+            await navigatePages();
         }
     }
+}
 
-    function triggerEvent(pageNumber) {
-        var pageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + pageNumber + '\'"]');
-        if (pageLink) {
-            pageLink.click();
-            var statusIndicator = document.getElementById('_viewRoot:status.start');
-            var interval = setInterval(function() {
-                if (statusIndicator.style.display === 'none') {
-                    clearInterval(interval);
-                    setTimeout(function() {
-                        extractTextFromPage();
-                        var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
-                        if (nextPageLink) {
-                            triggerEvent(pageNumber + 1);
-                        } else {
-                            showMatches();
-                        }
-                    }, 0);
-                }
-            }, 200);
-        }
+function WaitForPageLoad() {
+    return new Promise((resolve, reject) => {
+        const statusIndicator = document.getElementById('_viewRoot:status.start');
+        const checkStatus = setInterval(() => {
+            if (statusIndicator && statusIndicator.style.display === 'none') {
+                clearInterval(checkStatus);
+                resolve();
+            }
+        }, 200);
+    });
+}
+
+function ExtractText() {
+    const regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+    const text = document.body.innerText;
+
+    if (text.length > 0) {
+        let lines = text.split('\n');
+        lines.forEach((line) => {
+            let found = line.match(regex);
+            if (found) {
+                ExtractedText = ExtractedText.concat(found);
+            }
+        });
     }
+}
 
-    var statusIndicator = document.getElementById('_viewRoot:status.start');
-    var interval = setInterval(function() {
-        if (statusIndicator.style.display === 'none') {
-            clearInterval(interval);
-            setTimeout(function() {
-                extractTextFromPage();
-                var nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'2\'"]');
-                if (nextPageLink) {
-                    triggerEvent(2);
-                } else {
-                    showMatches();
-                }
-            }, 0);
+async function navigatePages() {
+    try {
+        const firstPageLink = document.querySelector("#formAcervo\\:tbProcessos\\:scPendentes_table > tbody > tr > td:nth-child(1)");
+        if (firstPageLink) {
+            firstPageLink.click();
+            await WaitForPageLoad();
         }
-    }, 200);
 
-    function showMatches() {
-        var allMatches = extractedText.flat().join('\n');
-        var numberOfLines = allMatches.split('\n').length;
-        navigator.clipboard.writeText(allMatches).then(function() {
-            alert(numberOfLines + ' Processos Copiados.');
-        }).catch(function(err) {
+        let pageNumber = 1;
+        while (true) {
+            await ExtractText();
+
+            let nextPageLink = document.querySelector(`.rich-datascr-inact[onclick*="'page': '${pageNumber + 1}'"]`);
+
+            if (!nextPageLink) {
+                break;
+            }
+
+            nextPageLink.click();
+            await WaitForPageLoad();
+            pageNumber++;
+        }
+    } catch (error) {
+        console.error('Erro na função navigatePages: ', error);
+        throw error;
+    }
+}
+
+function showMatches() {
+    const allMatches = ExtractedText.flat().join('\n');
+    const numberOfLines = allMatches.split('\n').length;
+    const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
+
+    if (confirmation) {
+        navigator.clipboard.writeText(allMatches).catch((err) => {
             console.error('Erro ao copiar texto para a área de transferência: ' + err);
         });
     }
-})();
+}
+
+let ExtractedText = [];
+
+ComarcaIndex().then(() => {
+    CxEntradaIndex().then(() => {
+        showMatches();
+    });
+});

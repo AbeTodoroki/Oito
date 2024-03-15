@@ -1,69 +1,114 @@
-javascript: (function() {
-    var comarcas = document.querySelectorAll('span.nomeTarefa');
+javascript:
 
-    async function cycling() {
-        for (let index = 0; index < comarcas.length; index++) {
-            var caixaEntrada = comarcas[index];
-            caixaEntrada.click();
-            await waitForPageLoad();
-            await processNewCaixa();
-        }
-        selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
+async function ComarcaIndex() {
+    var elements = document.querySelectorAll('span.nomeTarefa');
+
+    for (let element of elements) {
+        element.click();
+        await WaitForPageLoad();
     }
+}
 
-    async function waitForPageLoad() {
-        return new Promise(function(resolve) {
-            var statusIndicator = document.getElementById('_viewRoot:status.start');
-            var checkStatus = setInterval(function() {
-                if (statusIndicator.style.display === 'none') {
-                    clearInterval(checkStatus);
-                    resolve();
-                }
-            }, 200);
+async function CxEntradaIndex() {
+    var elements = document.querySelectorAll('span.nomeTarefa');
+
+    for (let element of elements) {
+        if (element.textContent.trim() === 'Caixa de entrada') {
+            element.click();
+            await WaitForPageLoad();
+            await navigatePages();
+        }
+    }
+}
+
+function WaitForPageLoad() {
+    return new Promise(function (resolve) {
+        var statusIndicator = document.getElementById('_viewRoot:status.start');
+        var checkStatus = setInterval(function () {
+            if (statusIndicator && statusIndicator.style.display === 'none') {
+                clearInterval(checkStatus);
+                resolve();
+            }
+        }, 200);
+    });
+}
+
+function ExtractText() {
+    let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+    let text = document.body.innerText;
+
+    if (text.length > 0) {
+        let lines = text.split('\n');
+        lines.forEach(function (line) {
+            let found = line.match(regex);
+            if (found) {
+                ExtractedText = ExtractedText.concat(found);
+            }
         });
     }
+}
 
-    async function processNewCaixa() {
-        var addCaixaLink = document.getElementById('addCaixa');
+async function navigatePages() {
+    try {
+        let pageNumber = 1;
+        while (true) {
+            await ExtractText();
+            let nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
+            if (!nextPageLink) {
+                break;
+            }
+            nextPageLink.click();
+            await WaitForPageLoad();
+            pageNumber++;
+        }
+    } catch (error) {
+        console.error('Error in navigatePages function: ', error);
+    }
+}
+
+async function processNewCaixa() {
+    try {
+        let addCaixaLink = document.getElementById('addCaixa');
         if (addCaixaLink) {
             addCaixaLink.click();
-            await waitForPageLoad();
+            await WaitForPageLoad();
 
-            var nmCxInput = document.getElementById('frmNovaCaixa:nmCx');
+            let nmCxInput = document.getElementById('frmNovaCaixa:nmCx');
             if (nmCxInput) {
                 nmCxInput.value = "Verificados no acervo";
-                await waitForPageLoad();
+                await WaitForPageLoad();
 
-                var criarCaixaButton = document.getElementById('frmNovaCaixa:btNCx');
+                let criarCaixaButton = document.getElementById('frmNovaCaixa:btNCx');
                 if (criarCaixaButton) {
                     criarCaixaButton.click();
-                    await waitForPageLoad();
+                    await WaitForPageLoad();
 
-                    var finalizarButton = document.querySelector('input[type="reset"][value="Finalizar"]');
+                    let finalizarButton = document.querySelector('input[type="reset"][value="Finalizar"]');
                     if (finalizarButton) {
                         finalizarButton.click();
-                        await waitForPageLoad();
+                        await WaitForPageLoad();
                     }
 
-                    var selecionarTodos = document.querySelector('[id$=":selecionarTodos"]');
+                    let selecionarTodos = document.querySelector('[id$=":selecionarTodos"]');
                     if (selecionarTodos) {
                         selecionarTodos.click();
-                        await waitForPageLoad();
+                        await WaitForPageLoad();
 
-                        var moverParaLink = document.getElementById('moverPara');
+                        let moverParaLink = document.getElementById('moverPara');
                         if (moverParaLink) {
                             moverParaLink.click();
-                            await waitForPageLoad();
+                            await WaitForPageLoad();
 
-                            var caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
+                            let caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
                             if (caixaDestinoSelect) {
                                 selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
-                                await waitForPageLoad();
+                                await WaitForPageLoad();
 
-                                var btMvPrButton = document.getElementById('frmMoverPara:btMvPr');
+                                let btMvPrButton = document.getElementById('frmMoverPara:btMvPr');
                                 if (btMvPrButton) {
                                     btMvPrButton.click();
-                                    await waitForPageLoad();
+                                    await WaitForPageLoad();
+
                                     moveSelectedItems();
                                 }
                             }
@@ -72,38 +117,37 @@ javascript: (function() {
                 }
             }
         }
+    } catch (error) {
+        console.error('Error in processNewCaixa function: ', error);
     }
+}
 
-    async function moveSelectedItems() {
-        var checkbox = document.querySelector('[id$=":selecionarTodos"]');
-        if (checkbox) {
-            checkbox.click();
-            await waitForPageLoad();
-
-            var moveLink = document.getElementById('moverPara');
-            if (moveLink) {
-                moveLink.click();
-                await waitForPageLoad();
-
-                var moveButton = document.getElementById('frmMoverPara:btMvPr');
-                if (moveButton) {
-                    moveButton.click();
-                    await waitForPageLoad();
-                    document.querySelector('.modal-backdrop').style.display = 'none';
-                }
-                moveSelectedItems();
-            }
+function selectOptionByText(selectElement, text) {
+    for (let option of selectElement.options) {
+        if (option.text === text) {
+            option.selected = true;
+            break;
         }
     }
+}
 
-    function selectOptionByText(selectElement, text) {
-        for (var option of selectElement.options) {
-            if (option.text === text) {
-                option.selected = true;
-                break;
-            }
-        }
+function showMatches() {
+    let allMatches = ExtractedText.flat().join('\n');
+    let numberOfLines = allMatches.split('\n').length;
+    let confirmation = confirm(numberOfLines + ' Processos encontrados.\nDeseja copiar para a área de transferência?');
+
+    if (confirmation) {
+        navigator.clipboard.writeText(allMatches).then(function () {
+        }).catch(function (err) {
+            console.error('Erro ao copiar texto para a área de transferência: ' + err);
+        });
     }
+}
 
-    cycling();
-})();
+let ExtractedText = [];
+
+ComarcaIndex().then(() => {
+    CxEntradaIndex().then(() => {
+        showMatches();
+    });
+});
