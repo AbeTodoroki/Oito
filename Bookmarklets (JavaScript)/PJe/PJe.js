@@ -79,13 +79,18 @@ async function navigatePages() {
 function showMatches() {
     const allMatches = ExtractedText.flat().join('\n');
     const numberOfLines = allMatches.split('\n').length;
-    const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
 
-    if (confirmation) {
-        navigator.clipboard.writeText(allMatches).catch((err) => {
-            console.error('Erro ao copiar texto para a área de transferência: ' + err);
-        });
-    }
+    window.addEventListener('focus', function onFocused() {
+        window.removeEventListener('focus', onFocused);
+
+        const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
+
+        if (confirmation) {
+            navigator.clipboard.writeText(allMatches).catch((err) => {
+                console.error('Erro ao copiar texto para a área de transferência: ' + err);
+            });
+        }
+    });
 }
 
 let ExtractedText = [];
