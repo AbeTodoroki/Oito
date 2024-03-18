@@ -11,17 +11,21 @@ async function ComarcaIndex() {
 
 async function CxEntradaIndex() {
     let elements = document.querySelectorAll('span.nomeTarefa');
+    let i = 0;
 
-    for (let element of elements) {
+    while (i < elements.length) {
+        let element = elements[i];
         let initialLength = ExtractedText.length;
         if (element.textContent.trim() === 'Caixa de entrada') {
             element.click();
             await WaitForPageLoad();
             await navigatePages();
             if (ExtractedText.length > initialLength) {
-                await Caixa();
+                await PopularCaixa();
             }
         }
+        elements = document.querySelectorAll('span.nomeTarefa');
+        i++;
     }
 }
 
@@ -33,7 +37,7 @@ function WaitForPageLoad() {
                 clearInterval(checkStatus);
                 resolve();
             }
-        }, 50);
+        }, 200);
     });
 }
 
@@ -80,15 +84,7 @@ async function navigatePages() {
     }
 }
 
-async function ClickId(id) {
-    const elementId = document.getElementById(id);
-    if (elementId) {
-        elementId.click();
-        await WaitForPageLoad();
-    }
-}
-
-async function ClickQuery(id) {
+async function Click(id) {
     const elementQuery = document.querySelector(id);
     if (elementQuery) {
         elementQuery.click();
@@ -96,32 +92,17 @@ async function ClickQuery(id) {
     }
 }
 
-async function Caixa() {
-    await ClickId('addCaixa');
-
-    const nmCxInput = document.getElementById('frmNovaCaixa:nmCx');
-    if (nmCxInput) {
-        nmCxInput.value = "Verificados no acervo";
-        await waitForPageLoad();
-
-        await ClickId('frmCaixa:btNCx');
-        await ClickQuery('input[type="reset"][value="Finalizar"]');
-
-        let SelecionarTodos = document.querySelector('[id$=":SelecionarTodos"]');
-        while (SelecionarTodos) {
-            await ClickQuery('[id$=":SelecionarTodos"]');
-            await ClickId('moverPara');
-
-            const caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
-            if (caixaDestinoSelect) {
-                selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
-                await waitForPageLoad();
-
-                await ClickId('frmMoverPara:btMvPr');
-            }
-            document.querySelector('.modal-backdrop').style.display = 'none';
-        }
+async function PopularCaixa() {
+    await Click("#formAcervo\\:tbProcessos\\:j_id1141\\:selecionarTodos");
+    await Click("#moverPara > i");
+    const caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
+    if (caixaDestinoSelect) {
+        selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
+        await WaitForPageLoad();
+        await Click("#frmMoverPara\\:btMvPr");
+        document.querySelector('.modal-backdrop').style.display = 'none';
     }
+    PopularCaixa();
 }
 
 function selectOptionByText(selectElement, text) {
