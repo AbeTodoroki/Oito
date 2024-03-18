@@ -1,7 +1,7 @@
 javascript:
 
 async function ComarcaIndex() {
-    var elements = document.querySelectorAll('span.nomeTarefa');
+    let elements = document.querySelectorAll('span.nomeTarefa');
 
     for (let element of elements) {
         element.click();
@@ -10,36 +10,40 @@ async function ComarcaIndex() {
 }
 
 async function CxEntradaIndex() {
-    var elements = document.querySelectorAll('span.nomeTarefa');
+    let elements = document.querySelectorAll('span.nomeTarefa');
 
     for (let element of elements) {
+        let initialLength = ExtractedText.length;
         if (element.textContent.trim() === 'Caixa de entrada') {
             element.click();
             await WaitForPageLoad();
             await navigatePages();
+            if (ExtractedText.length > initialLength) {
+                await Caixa();
+            }
         }
     }
 }
 
 function WaitForPageLoad() {
-    return new Promise(function (resolve) {
-        var statusIndicator = document.getElementById('_viewRoot:status.start');
-        var checkStatus = setInterval(function () {
+    return new Promise((resolve, reject) => {
+        const statusIndicator = document.getElementById('_viewRoot:status.start');
+        const checkStatus = setInterval(() => {
             if (statusIndicator && statusIndicator.style.display === 'none') {
                 clearInterval(checkStatus);
                 resolve();
             }
-        }, 200);
+        }, 50);
     });
 }
 
 function ExtractText() {
-    let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
-    let text = document.body.innerText;
+    const regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+    const text = document.body.innerText;
 
     if (text.length > 0) {
         let lines = text.split('\n');
-        lines.forEach(function (line) {
+        lines.forEach((line) => {
             let found = line.match(regex);
             if (found) {
                 ExtractedText = ExtractedText.concat(found);
@@ -50,75 +54,73 @@ function ExtractText() {
 
 async function navigatePages() {
     try {
+        const firstPageLink = document.querySelector("#formAcervo\\:tbProcessos\\:scPendentes_table > tbody > tr > td:nth-child(1)");
+        if (firstPageLink) {
+            firstPageLink.click();
+            await WaitForPageLoad();
+        }
+
         let pageNumber = 1;
         while (true) {
             await ExtractText();
-            let nextPageLink = document.querySelector('.rich-datascr-inact[onclick*="\'page\': \'' + (pageNumber + 1) + '\'"]');
+
+            let nextPageLink = document.querySelector(`.rich-datascr-inact[onclick*="'page': '${pageNumber + 1}'"]`);
+
             if (!nextPageLink) {
                 break;
             }
+
             nextPageLink.click();
             await WaitForPageLoad();
             pageNumber++;
         }
     } catch (error) {
-        console.error('Error in navigatePages function: ', error);
+        console.error('Erro na função navigatePages: ', error);
+        throw error;
     }
 }
 
-async function processNewCaixa() {
-    try {
-        let addCaixaLink = document.getElementById('addCaixa');
-        if (addCaixaLink) {
-            addCaixaLink.click();
-            await WaitForPageLoad();
+async function ClickId(id) {
+    const elementId = document.getElementById(id);
+    if (elementId) {
+        elementId.click();
+        await WaitForPageLoad();
+    }
+}
 
-            let nmCxInput = document.getElementById('frmNovaCaixa:nmCx');
-            if (nmCxInput) {
-                nmCxInput.value = "Verificados no acervo";
-                await WaitForPageLoad();
+async function ClickQuery(id) {
+    const elementQuery = document.querySelector(id);
+    if (elementQuery) {
+        elementQuery.click();
+        await WaitForPageLoad();
+    }
+}
 
-                let criarCaixaButton = document.getElementById('frmNovaCaixa:btNCx');
-                if (criarCaixaButton) {
-                    criarCaixaButton.click();
-                    await WaitForPageLoad();
+async function Caixa() {
+    await ClickId('addCaixa');
 
-                    let finalizarButton = document.querySelector('input[type="reset"][value="Finalizar"]');
-                    if (finalizarButton) {
-                        finalizarButton.click();
-                        await WaitForPageLoad();
-                    }
+    const nmCxInput = document.getElementById('frmNovaCaixa:nmCx');
+    if (nmCxInput) {
+        nmCxInput.value = "Verificados no acervo";
+        await waitForPageLoad();
 
-                    let selecionarTodos = document.querySelector('[id$=":selecionarTodos"]');
-                    if (selecionarTodos) {
-                        selecionarTodos.click();
-                        await WaitForPageLoad();
+        await ClickId('frmCaixa:btNCx');
+        await ClickQuery('input[type="reset"][value="Finalizar"]');
 
-                        let moverParaLink = document.getElementById('moverPara');
-                        if (moverParaLink) {
-                            moverParaLink.click();
-                            await WaitForPageLoad();
+        let SelecionarTodos = document.querySelector('[id$=":SelecionarTodos"]');
+        while (SelecionarTodos) {
+            await ClickQuery('[id$=":SelecionarTodos"]');
+            await ClickId('moverPara');
 
-                            let caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
-                            if (caixaDestinoSelect) {
-                                selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
-                                await WaitForPageLoad();
+            const caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
+            if (caixaDestinoSelect) {
+                selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
+                await waitForPageLoad();
 
-                                let btMvPrButton = document.getElementById('frmMoverPara:btMvPr');
-                                if (btMvPrButton) {
-                                    btMvPrButton.click();
-                                    await WaitForPageLoad();
-
-                                    moveSelectedItems();
-                                }
-                            }
-                        }
-                    }
-                }
+                await ClickId('frmMoverPara:btMvPr');
             }
+            document.querySelector('.modal-backdrop').style.display = 'none';
         }
-    } catch (error) {
-        console.error('Error in processNewCaixa function: ', error);
     }
 }
 
@@ -132,16 +134,20 @@ function selectOptionByText(selectElement, text) {
 }
 
 function showMatches() {
-    let allMatches = ExtractedText.flat().join('\n');
-    let numberOfLines = allMatches.split('\n').length;
-    let confirmation = confirm(numberOfLines + ' Processos encontrados.\nDeseja copiar para a área de transferência?');
+    const allMatches = ExtractedText.flat().join('\n');
+    const numberOfLines = allMatches.split('\n').length;
 
-    if (confirmation) {
-        navigator.clipboard.writeText(allMatches).then(function () {
-        }).catch(function (err) {
-            console.error('Erro ao copiar texto para a área de transferência: ' + err);
-        });
-    }
+    window.addEventListener('focus', function onFocused() {
+        window.removeEventListener('focus', onFocused);
+
+        const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
+
+        if (confirmation) {
+            navigator.clipboard.writeText(allMatches).catch((err) => {
+                console.error('Erro ao copiar texto para a área de transferência: ' + err);
+            });
+        }
+    });
 }
 
 let ExtractedText = [];
