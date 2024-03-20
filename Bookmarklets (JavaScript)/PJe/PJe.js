@@ -1,5 +1,6 @@
 javascript:
 
+
 async function ComarcaIndex() {
     let elements = document.querySelectorAll('span.nomeTarefa');
 
@@ -90,7 +91,7 @@ function showMatches() {
     function proceedWithConfirmation() {
         const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
         if (confirmation) {
-            navigator.clipboard.writeText(extractedText).catch((err) => {
+            navigator.clipboard.writeText(allMatches).catch((err) => {
                 console.error('Erro ao copiar texto para a área de transferência: ' + err);
             });
         }
