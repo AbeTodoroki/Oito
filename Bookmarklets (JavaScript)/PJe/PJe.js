@@ -80,17 +80,27 @@ function showMatches() {
     const allMatches = ExtractedText.flat().join('\n');
     const numberOfLines = allMatches.split('\n').length;
 
-    window.addEventListener('focus', function onFocused() {
-        window.removeEventListener('focus', onFocused);
+    function handleVisibilityChange() {
+        if (document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            proceedWithConfirmation();
+        }
+    }
 
+    function proceedWithConfirmation() {
         const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
-
         if (confirmation) {
-            navigator.clipboard.writeText(allMatches).catch((err) => {
+            navigator.clipboard.writeText(extractedText).catch((err) => {
                 console.error('Erro ao copiar texto para a área de transferência: ' + err);
             });
         }
-    });
+    }
+
+    if (document.visibilityState === 'visible') {
+        proceedWithConfirmation();
+    } else {
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
 }
 
 let ExtractedText = [];
