@@ -1,64 +1,70 @@
+javascript:
+
+
 let extractedText = '';
 
 function extractTextAndClickNext() {
-    let iframe = document.querySelector("#userMainFrame");
+    let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+    let matches = [];
+    let text;
+    let arrowNext;
 
-    if (iframe) {
-        let iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+    let iframe = document.querySelector("#userMainFrame") || document.querySelector("body > div:nth-child(16) > iframe");
+    let doc = iframe ? (iframe.contentDocument || iframe.contentWindow.document) : document;
 
-        if (iframeDocument && iframeDocument.body) {
-            let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
-            let matches = [];
-            let text = iframeDocument.body.innerText;
-            
-            let match;
-            while (match = regex.exec(text)) {
-                matches.push(match[0]);
-            }
-
-            if (matches.length > 0) {
-                let values = matches.join('\n');
-                extractedText += values + '\n';
-            }
-
-            let arrowNext = iframeDocument.querySelector('#navigator > div.navRight > a.arrowNextOn');
-            let alternativeArrowNext = iframeDocument.querySelector('a[alt="próxima"][title="próxima página"]');
-            
-            if (arrowNext) {
-                arrowNext.addEventListener('click', function() {
-                    iframe.addEventListener('load', extractTextAndClickNext);
-                });
-                arrowNext.click();
-            } else if (alternativeArrowNext) {
-                alternativeArrowNext.addEventListener('click', function() {
-                    iframe.addEventListener('load', extractTextAndClickNext);
-                });
-                alternativeArrowNext.click();
-            } else {
-                displayPopup();
-            }
-        } else {
-            alert("No values found on this page!");
-        }
+    if (doc && doc.body) {
+        text = doc.body.innerText;
     } else {
-        alert("Iframe document body not found!");
+        alert("Document body not found!");
+        return;
+    }
+
+    let match;
+    while (match = regex.exec(text)) {
+        matches.push(match[0]);
+    }
+
+    if (matches.length > 0) {
+        let values = matches.join('\n');
+        extractedText += values + '\n';
+    } else {
+        alert("No values found on this page!");
+        return;
+    }
+
+    arrowNext = doc.querySelector('#navigator > div.navRight > a.arrowNextOn') || doc.querySelector('a[alt="próxima"][title="próxima página"]');
+    if (arrowNext) {
+        arrowNext.click();
+        setTimeout(extractTextAndClickNext, 2000);
+    } else {
+        showMatches();
     }
 }
 
-function displayPopup() {
-    if (extractedText !== '') {
-        var allMatches = extractedText.trim();
-        var numberOfLines = allMatches.split('\n').length;
-        let confirmation = confirm(numberOfLines + ' Processos encontrados.\nDeseja copiar para a área de transferência?');
+function showMatches() {
+    const allMatches = extractedText.split('\n');
+    const numberOfLines = allMatches.length;
+
+    function handleVisibilityChange() {
+        if (document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            proceedWithConfirmation();
+        }
+    }
+
+    function proceedWithConfirmation() {
+        const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
         if (confirmation) {
-            navigator.clipboard.writeText(allMatches).then(function() {
-                alert('Texto copiado para a área de transferência.');
-            }).catch(function(err) {
+            navigator.clipboard.writeText(extractedText).catch((err) => {
                 console.error('Erro ao copiar texto para a área de transferência: ' + err);
             });
         }
+    }
+
+    if (document.visibilityState === 'visible') {
+        proceedWithConfirmation();
     } else {
-        alert("No values found on any page!");
+        document.addEventListener('visibilitychange', handleVisibilityChange);
     }
 }
 
