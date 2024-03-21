@@ -1,6 +1,5 @@
 javascript:
 
-
 async function ComarcaIndex() {
     let elements = document.querySelectorAll('span.nomeTarefa');
 
@@ -89,6 +88,7 @@ function showMatches() {
     }
 
     function proceedWithConfirmation() {
+        
         const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
         if (confirmation) {
             navigator.clipboard.writeText(allMatches).catch((err) => {
@@ -98,7 +98,7 @@ function showMatches() {
     }
 
     if (document.visibilityState === 'visible') {
-        proceedWithConfirmation();
+        setTimeout(proceedWithConfirmation, 2000);
     } else {
         document.addEventListener('visibilitychange', handleVisibilityChange);
     }

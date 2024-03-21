@@ -1,6 +1,5 @@
 javascript:
 
-
 let extractedText = '';
 
 function extractTextAndClickNext() {
@@ -9,7 +8,7 @@ function extractTextAndClickNext() {
     let text;
     let arrowNext;
 
-    let iframe = document.querySelector("#userMainFrame") || document.querySelector("body > div:nth-child(16) > iframe");
+    let iframe = document.querySelector("#userMainFrame") || document.querySelector("body > div:nth-child(16) > iframe") || document.querySelector("body > div:nth-child(30) > iframe");
     let doc = iframe ? (iframe.contentDocument || iframe.contentWindow.document) : document;
 
     if (doc && doc.body) {
@@ -62,7 +61,7 @@ function showMatches() {
     }
 
     if (document.visibilityState === 'visible') {
-        proceedWithConfirmation();
+        setTimeout(proceedWithConfirmation, 2000);
     } else {
         document.addEventListener('visibilitychange', handleVisibilityChange);
     }

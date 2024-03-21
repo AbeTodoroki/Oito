@@ -11,21 +11,24 @@ async function ComarcaIndex() {
 
 async function CxEntradaIndex() {
     let elements = document.querySelectorAll('span.nomeTarefa');
-    let i = 0;
 
-    while (i < elements.length) {
+    for (let i = 0; i < elements.length; i++) {
         let element = elements[i];
-        let initialLength = ExtractedText.length;
         if (element.textContent.trim() === 'Caixa de entrada') {
             element.click();
             await WaitForPageLoad();
-            await navigatePages();
-            if (ExtractedText.length > initialLength) {
-                await PopularCaixa();
+
+            let search = document.querySelector("#formAcervo\\:filtros > div > div.col-xs-4.col-md-4 > ul > li.dropdown.drop-menu > a");
+            if (search !== null) {
+                await CriarCaixa();
+                await ExtractText();
+                await Click("#modalMessage > div > div > div.modal-header > span > a");
+            } else {
+                console.log("search element not found.");
             }
+
+            elements = document.querySelectorAll('span.nomeTarefa');
         }
-        elements = document.querySelectorAll('span.nomeTarefa');
-        i++;
     }
 }
 
@@ -41,68 +44,62 @@ function WaitForPageLoad() {
     });
 }
 
-function ExtractText() {
-    const regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
-    const text = document.body.innerText;
+async function CriarCaixa() {
+    await Click("#addCaixa");
 
-    if (text.length > 0) {
+    const nmCxInput = document.getElementById('frmNovaCaixa:nmCx');
+    if (nmCxInput) {
+        nmCxInput.value = "Verificados no acervo";
+        await WaitForPageLoad();
+
+        await Click("#frmNovaCaixa\\:btNCx");
+        await Click("#frmNovaCaixa > div.modal-footer > input.btn.btn-default.pull-right");
+    }
+
+}
+
+async function ExtractText() {
+    try {
+        const regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
+        const text = document.body.innerText;
         let lines = text.split('\n');
+
         lines.forEach((line) => {
             let found = line.match(regex);
             if (found) {
                 ExtractedText = ExtractedText.concat(found);
             }
         });
-    }
-}
 
-async function navigatePages() {
-    try {
-        const firstPageLink = document.querySelector("#formAcervo\\:tbProcessos\\:scPendentes_table > tbody > tr > td:nth-child(1)");
-        if (firstPageLink) {
-            firstPageLink.click();
-            await WaitForPageLoad();
-        }
+        await PopularCaixa();
 
-        let pageNumber = 1;
-        while (true) {
-            await ExtractText();
-
-            let nextPageLink = document.querySelector(`.rich-datascr-inact[onclick*="'page': '${pageNumber + 1}'"]`);
-
-            if (!nextPageLink) {
-                break;
-            }
-
-            nextPageLink.click();
-            await WaitForPageLoad();
-            pageNumber++;
-        }
     } catch (error) {
-        console.error('Erro na função navigatePages: ', error);
+        console.error('Erro na função ExtractText: ', error);
         throw error;
     }
 }
 
-async function Click(id) {
-    const elementQuery = document.querySelector(id);
-    if (elementQuery) {
-        elementQuery.click();
-        await WaitForPageLoad();
-    }
-}
-
 async function PopularCaixa() {
-    await Click("#formAcervo\\:tbProcessos\\:j_id1141\\:selecionarTodos");
-    await Click("#moverPara > i");
-    const caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
-    if (caixaDestinoSelect) {
-        selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
-        await WaitForPageLoad();
-        await Click("#frmMoverPara\\:btMvPr");
-        document.querySelector('.modal-backdrop').style.display = 'none';
+    try {
+        await Click("#formAcervo\\:tbProcessos\\:j_id1141\\:selecionarTodos") || Click("#formAcervo\\:tbProcessos\\:j_id1140\\:selecionarTodos");
+        await Click("#moverPara > i");
+
+        const caixaDestinoSelect = document.getElementById('frmMoverPara:cxDestino');
+        if (caixaDestinoSelect) {
+            selectOptionByText(caixaDestinoSelect, "Verificados no acervo");
+            await WaitForPageLoad();
+
+            await Click("#frmMoverPara\\:btMvPr");
+            document.querySelector('.modal-backdrop').style.display = 'none';
+        }
     }
-    PopularCaixa();
+    catch (error) {
+        console.error('Erro na função ExtractText: ', error);
+        throw error;
+    }
+    if (document.querySelector("#formAcervo\\:filtros > div > div.col-xs-4.col-md-4 > ul > li.dropdown.drop-menu > a > i") !== null) {
+        await ExtractText();
+    }
 }
 
 function selectOptionByText(selectElement, text) {
@@ -114,21 +111,40 @@ function selectOptionByText(selectElement, text) {
     }
 }
 
+async function Click(id) {
+    const elementQuery = document.querySelector(id);
+    if (elementQuery) {
+        elementQuery.click();
+        await WaitForPageLoad();
+    }
+}
+
 function showMatches() {
     const allMatches = ExtractedText.flat().join('\n');
     const numberOfLines = allMatches.split('\n').length;
 
-    window.addEventListener('focus', function onFocused() {
-        window.removeEventListener('focus', onFocused);
+    function handleVisibilityChange() {
+        if (document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            proceedWithConfirmation();
+        }
+    }
+
+    function proceedWithConfirmation() {
 
         const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
-
         if (confirmation) {
             navigator.clipboard.writeText(allMatches).catch((err) => {
                 console.error('Erro ao copiar texto para a área de transferência: ' + err);
             });
-        }
-    });
+        } console.log(allMatches);
+    }
+
+    if (document.visibilityState === 'visible') {
+        setTimeout(proceedWithConfirmation, 2000);
+    } else {
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
 }
 
 let ExtractedText = [];
