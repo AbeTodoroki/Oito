@@ -79,16 +79,17 @@ async function navigatePages() {
 function showMatches() {
     const allMatches = ExtractedText.flat().join('\n');
     const numberOfLines = allMatches.split('\n').length;
+    console.log(allMatches);
 
     function handleVisibilityChange() {
         if (document.visibilityState === 'visible') {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            proceedWithConfirmation();
+            setTimeout(proceedWithConfirmation, 2000);
         }
     }
 
     function proceedWithConfirmation() {
-        
+
         const confirmation = confirm(`${numberOfLines} Processos encontrados.\nDeseja copiar para a área de transferência?`);
         if (confirmation) {
             navigator.clipboard.writeText(allMatches).catch((err) => {

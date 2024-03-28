@@ -1,6 +1,5 @@
-javascript:
-
 let extractedText = '';
+let pageCount = 0;
 
 function extractTextAndClickNext() {
     let regex = /(\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4})/g;
@@ -32,7 +31,8 @@ function extractTextAndClickNext() {
     }
 
     arrowNext = doc.querySelector('#navigator > div.navRight > a.arrowNextOn') || doc.querySelector('a[alt="próxima"][title="próxima página"]');
-    if (arrowNext) {
+    if (arrowNext && pageCount < 99) {
+        pageCount++;
         arrowNext.click();
         setTimeout(extractTextAndClickNext, 2000);
     } else {
@@ -43,11 +43,12 @@ function extractTextAndClickNext() {
 function showMatches() {
     const allMatches = extractedText.split('\n');
     const numberOfLines = allMatches.length;
+    console.log(extractedText);
 
     function handleVisibilityChange() {
         if (document.visibilityState === 'visible') {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            proceedWithConfirmation();
+            setTimeout(proceedWithConfirmation, 2000);
         }
     }
 
